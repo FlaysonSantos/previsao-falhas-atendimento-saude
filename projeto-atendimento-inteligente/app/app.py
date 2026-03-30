@@ -1,15 +1,17 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import os
 
-# 1. Configuração da Página (Layout Wide para expandir no ecrã)
-st.set_page_config(page_title="Dashboard de Operações", page_icon="📊", layout="wide")
+# 1. Carregamento do modelo com caminho dinâmico
+# Isso garante que ele funcione tanto no computador local quanto no Streamlit Cloud
+diretorio_atual = os.path.dirname(__file__)
+caminho_modelo = os.path.join(diretorio_atual, 'modelo_atendimento.pkl')
 
-# Tentar carregar o modelo
 try:
-    model = joblib.load('modelo_atendimento.pkl')
+    model = joblib.load(caminho_modelo)
 except FileNotFoundError:
-    st.error("❌ Erro: O ficheiro 'modelo_atendimento.pkl' não foi encontrado.")
+    st.error(f"❌ Erro: O ficheiro 'modelo_atendimento.pkl' não foi encontrado no caminho: {caminho_modelo}")
     st.stop()
 
 # ==========================================
