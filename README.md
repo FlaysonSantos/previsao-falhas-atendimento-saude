@@ -42,8 +42,7 @@ Sistema web interativo desenvolvido com Streamlit:
 ## 🚀 Deploy
 
 Aplicação disponível online:
-👉 (coloque seu link aqui)
-
+👉 [Deploy](https://github.com/FlaysonSantos/previsao-falhas-atendimento-saude/blob/main/projeto-atendimento-inteligente/README.md)
 ---
 
 ## 💼 Conclusão
