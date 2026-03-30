@@ -10,11 +10,14 @@ Baixo nível de serviço (NS) impactando desempenho operacional e financeiro.
 
 ---
 
-## 📈 Resultados
+## 💰 Ganhos e Benefícios Financeiros
+Os ganhos baseiam-se na métrica da Controladoria: **R$ 235,00 a cada 1.000 clientes atendidos** para cada ponto percentual acima de 75%. A regional atende em média 192.000 clientes por ano.
 
-- Acurácia do modelo: 91%
-- Recall (falhas): 96%
-- Ganho estimado: R$ 378 mil/ano
+| Métrica | Projeto Green Belt (Manual) | Aplicação de Machine Learning |
+| :--- | :--- | :--- |
+| **Nível de Serviço** | 83,39% (Alcançado)  | **90,00% (Meta Ideal)**  |
+| **Ganho Anual** | **R$ 378.556,80** | **R$ 676.800,00 (Projetado)** |
+| **Eficiência** | Foco em Eficácia (Bater a Meta) | **Foco em Eficiência (Zero Desperdício)** |
 
 ---
 
