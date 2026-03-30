@@ -10,6 +10,8 @@ Este projeto documenta a jornada de melhoria do **Nível de Serviço (NS)** nas 
 
 **Projeto base Green belt lean six sigma** [Repositorio](https://drive.google.com/file/d/1Flrb1j7qcz7gGszCCOjLpwT8MkL3ntOB/view)
 
+**Modelo Rodando Online de Machine learning** [Previsao em tempo real](https://previsao-falhas-atendimento-saude.streamlit.app/)
+
 ### Fase 1: O Projeto Green Belt (Base Estatística)
 * **Problema:** O Nível de Serviço (NS) apresentava tendência de queda, situando-se em **66,57%**, abaixo da meta de 75% estabelecida pelo Grupo Vitta.
 **Causas Raiz:** Através de ferramentas como **SIPOC** e **Espinha de Peixe**, identificou-se que a falta de documentos, erros de cadastro e o tempo de autorização eram os maiores ofensores.
