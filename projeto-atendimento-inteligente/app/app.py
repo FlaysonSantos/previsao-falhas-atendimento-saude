@@ -42,7 +42,7 @@ clientes_por_guiche = clientes / guiches
 # 🖥️ ECRÃ PRINCIPAL - DASHBOARD DE GESTÃO
 # ==========================================
 st.title("📊 Dashboard Inteligente de Atendimento")
-st.markdown("Monitorização contínua e previsão de estrangulamentos suportada por Machine Learning. 👨🏻‍💻Desenvolvido por [Flayson Santos](https://github.com/FlaysonSantos)")
+st.markdown("Monitorização contínua e previsão de estrangulamentos suportada por Machine Learning. 👨🏻‍💻Desenvolvido por [Flayson Santos](https://github.com/FlaysonSantos/previsao-falhas-atendimento-saude)")
 st.markdown("---")
 
 # Linha de KPIs (Indicadores Chave)
