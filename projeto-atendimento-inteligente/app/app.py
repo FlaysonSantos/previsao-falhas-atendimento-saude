@@ -141,6 +141,22 @@ if st.button("Executar Simulação do Sistema", type="primary", use_container_wi
             else:
                 st.success("💡 **Eficiência Máxima:** Os seus recursos estão perfeitamente dimensionados para a procura atual. Não há ociosidade.")
 
+# Simulação de Decisão Automática
+if resultado == 1:
+    st.error("🚨 Alerta de Quebra de NS (Abaixo de 75%)")
+    
+    # Busca automática da melhor configuração (Decision Simulation)
+    for g in range(guiches + 1, 16):
+        # Simula o impacto Lean: abrindo guichês e reduzindo erros
+        simulacao = [[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, 0, clientes/g]]
+        if model.predict(simulacao)[0] == 0:
+            st.success(f"✅ Decisão Prescritiva: Abra mais {g - guiches} guichê(s) para estabilizar o NS.")
+            break
+
+# Exibição de Alerta Baseado em Carta de Controle (Fase Control)
+if clientes_por_guiche > 13.2: # Valor crítico identificado no seu case
+    st.warning("⚠️ Atenção: Carga por guichê acima do Limite de Controle (LSC).")
+
 
 # ==========================================
 # 📊 GRÁFICO DE IMPACTO DAS VARIÁVEIS
