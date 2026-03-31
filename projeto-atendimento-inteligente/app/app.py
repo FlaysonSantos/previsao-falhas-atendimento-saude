@@ -3,8 +3,9 @@ import joblib
 import pandas as pd
 import os
 
-# 1. Carregamento do modelo com caminho dinâmico
-# Isso garante que ele funcione tanto no computador local quanto no Streamlit Cloud
+# 1. Configuração da Página e Carregamento do Modelo
+st.set_page_config(page_title="Dashboard de Operações", page_icon="📊", layout="wide")
+
 diretorio_atual = os.path.dirname(__file__)
 caminho_modelo = os.path.join(diretorio_atual, 'modelo_atendimento.pkl')
 
@@ -42,7 +43,7 @@ clientes_por_guiche = clientes / guiches
 # 🖥️ ECRÃ PRINCIPAL - DASHBOARD DE GESTÃO
 # ==========================================
 st.title("📊 Dashboard Inteligente de Atendimento")
-st.markdown("Monitorização contínua e previsão de estrangulamentos suportada por Machine Learning. 👨🏻‍💻Desenvolvido por [Flayson Santos](https://github.com/FlaysonSantos/previsao-falhas-atendimento-saude)")
+st.markdown("Monitorização contínua e previsão de estrangulamentos suportada por Machine Learning.")
 st.markdown("---")
 
 # Linha de KPIs (Indicadores Chave)
@@ -51,7 +52,10 @@ kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 kpi1.metric(label="Volume de Clientes", value=clientes)
 kpi2.metric(label="Capacidade (Guichés)", value=guiches)
 kpi3.metric(label="Carga (Clientes/Guiché)", value=f"{clientes_por_guiche:.1f}")
-kpi4.metric(label="Risco por Erros", value=erros_cadastro, delta="Alerta" if erros_cadastro > 5 else "Controlado", delta_color="inverse")
+
+# Alerta dinâmico baseado em Carta de Controle (Fase Control do Green Belt)
+risco_cor = "inverse" if erros_cadastro > 5 else "normal"
+kpi4.metric(label="Risco por Erros", value=erros_cadastro, delta="Alerta" if erros_cadastro > 5 else "Controlado", delta_color=risco_cor)
 
 st.markdown("---")
 
@@ -64,106 +68,69 @@ dados_entrada = pd.DataFrame([[
     'experiencia_operador', 'tempo_autorizacao', 'erros_cadastro', 'clientes_por_guiche'
 ])
 
-
-
 # ==========================================
-# 🔮 MOTOR DE PREVISÃO E PRESCRIÇÃO
+# 🔮 MOTOR DE PREVISÃO E PRESCRIÇÃO (Dinamizado)
 # ==========================================
-st.subheader("⚙️ Análise Preditiva e Plano de Ação")
+st.subheader("⚙️ Centro de Decisão Estratégica")
 
 if st.button("Executar Simulação do Sistema", type="primary", use_container_width=True):
-    with st.spinner('A processar o algoritmo e analisar variáveis...'):
+    with st.spinner('O algoritmo está a calcular o impacto operacional...'):
         resultado = model.predict(dados_entrada.values)[0]
     
     st.markdown("<br>", unsafe_allow_html=True)
-
-    col_alert, col_action = st.columns(2)
+    res_col1, res_col2 = st.columns(2)
 
     if resultado == 1:
-        # CENÁRIO 1: VAI DAR FALHA
-        with col_alert:
-            st.error("### ⚠️ ALERTA DE FALHA\nAlta probabilidade de quebra de fluxo com este cenário. Necessária intervenção.")
+        with res_col1:
+            st.error("### 🚨 STATUS: RISCO DE FALHA\nAlta probabilidade de quebra de fluxo com este cenário.")
             
-        with col_action:
-            st.warning("### 🔍 AVALIANDO SOLUÇÕES...")
+        with res_col2:
+            st.warning("### 🛠️ DECISÃO PRESCRITIVA")
             solucao_encontrada = False
             
-            # Simula ABRIR guichés até ao limite máximo de 15
-            for guiches_simulados in range(guiches + 1, 16):
-                cpg_simulado = clientes / guiches_simulados
-                cenario_simulado = pd.DataFrame([[
-                    clientes, guiches_simulados, plano_saude, documentos, 
-                    experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_simulado
-                ]], columns=dados_entrada.columns)
+            # Simulação automática para encontrar a configuração ideal
+            for g in range(guiches + 1, 16):
+                cpg_sim = clientes / g
+                cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
                 
-                if model.predict(cenario_simulado.values)[0] == 0:
-                    guiches_a_abrir = guiches_simulados - guiches
-                    st.success(f"💡 **Plano de Ação:** Abra mais **{guiches_a_abrir} guiché(s)** (passando a operar com {guiches_simulados} no total) para estabilizar o processo.")
+                if model.predict(cen_sim.values)[0] == 0:
+                    st.success(f"💡 **Plano de Ação:** Abra mais **{g - guiches} guiché(s)** para estabilizar o processo.")
+                    st.progress(g/15, text=f"Capacidade Necessária: {g}/15 guichés")
                     solucao_encontrada = True
                     break 
-                    
-            # SE CHEGOU A 15 GUICHÉS E CONTINUA A FALHAR (O SEU NOVO CENÁRIO)
+            
             if not solucao_encontrada:
-                st.error("🚨 **COLAPSO DE CAPACIDADE EMINENTE**")
-                st.info(f"💡 **Diagnóstico:** O volume atual ({clientes} clientes) ultrapassa a capacidade máxima física da unidade (15 guichés). Aumentar a equipa já não é possível.")
-                st.warning(
-                    "🛠️ **Ativar Plano de Contingência:**\n"
-                    "- **Desvio de Fluxo:** Direcionar clientes para o autoatendimento, aplicação ou triagem rápida.\n"
-                    "- **Força-Tarefa:** Deslocar supervisores ou backoffice para o atendimento de linha da frente.\n"
-                    "- **Modo Emergência:** Focar em zerar *Erros de Registo* e acelerar o *Tempo de Autorização* ao máximo."
-                )
+                st.error("🚨 **COLAPSO DE CAPACIDADE**")
+                st.info("Aumentar guichés não é suficiente. Atue em: **Erros de Registo** ou **Tempo de Autorização**.")
                 
     else:
-        # CENÁRIO 2: ATENDIMENTO OK (Verifica se há desperdício)
-        with col_alert:
-            st.success("### ✅ OPERAÇÃO ESTÁVEL\nO cenário atual suporta a procura sem estrangulamentos.")
+        with res_col1:
+            st.success("### ✅ STATUS: OPERAÇÃO ESTÁVEL\nO cenário atual suporta a procura sem estrangulamentos.")
             
-        with col_action:
-            st.info("### 🔍 PROCURANDO OPORTUNIDADES LEAN...")
+        with res_col2:
+            st.info("### 🔍 OPORTUNIDADE LEAN (OTIMIZAÇÃO)")
             guiches_ideais = guiches
+            for g in range(guiches - 1, 0, -1):
+                cpg_sim = clientes / g
+                cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
+                if model.predict(cen_sim.values)[0] == 0:
+                    guiches_ideais = g
+                else: break
             
-            # Simula FECHAR guichés do atual até 1
-            for guiches_simulados in range(guiches - 1, 0, -1):
-                cpg_simulado = clientes / guiches_simulados
-                cenario_simulado = pd.DataFrame([[
-                    clientes, guiches_simulados, plano_saude, documentos, 
-                    experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_simulado
-                ]], columns=dados_entrada.columns)
-                
-                if model.predict(cenario_simulado.values)[0] == 1:
-                    break
-                else:
-                    guiches_ideais = guiches_simulados
-                    
             if guiches_ideais < guiches:
-                guiches_a_fechar = guiches - guiches_ideais
-                st.warning(f"💡 **Alerta de Ociosidade:** Está a utilizar recursos em excesso. Pode **fechar {guiches_a_fechar} guiché(s)** e operar apenas com **{guiches_ideais}**. O atendimento continuará estável e reduzirá os custos operacionais.")
+                st.metric("Potencial de Redução", value=f"{guiches - guiches_ideais} Guiché(s)", delta="- Custos Operacionais")
+                st.write(f"Pode operar com apenas **{guiches_ideais} guichés** mantendo a segurança do SLA.")
             else:
-                st.success("💡 **Eficiência Máxima:** Os seus recursos estão perfeitamente dimensionados para a procura atual. Não há ociosidade.")
-
-
-
+                st.success("💡 **Eficiência Máxima:** Recursos perfeitamente dimensionados.")
 
 # ==========================================
-# 📊 GRÁFICO DE IMPACTO DAS VARIÁVEIS
+# 📊 ANÁLISE DE CAUSA RAIZ (Feature Importance)
 # ==========================================
 st.markdown("---")
 st.subheader("🔍 O que mais impacta as falhas no atendimento?")
-st.write("O gráfico abaixo mostra o 'peso' (importância) que o algoritmo dá a cada variável para prever uma falha, ajudando a identificar a causa raiz.")
-
 try:
-    # Extrai a importância de cada variável do modelo
     importancias = model.feature_importances_
-    
-    # Cria a tabela já com as variáveis no índice (Isto resolve o KeyError!)
-    df_importancias = pd.DataFrame(
-        importancias * 100,
-        index=dados_entrada.columns,
-        columns=['Impacto (%)']
-    ).sort_values(by='Impacto (%)', ascending=True)
-
-    # Desenha o gráfico de barras passando a tabela diretamente
-    st.bar_chart(df_importancias, height=350)
-    
+    df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto %']).sort_values(by='Impacto %', ascending=True)
+    st.bar_chart(df_imp, color="#ff4b4b", height=350)
 except AttributeError:
-    st.info("⚠️ O seu modelo não tem o atributo 'feature_importances_'. Isto costuma acontecer se o modelo guardado não for um Random Forest (ou Decision Tree).")
+    st.info("⚠️ O seu modelo não suporta visualização de importância de variáveis.")
