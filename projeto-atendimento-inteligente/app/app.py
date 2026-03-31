@@ -69,59 +69,99 @@ dados_entrada = pd.DataFrame([[
 ])
 
 # ==========================================
-# 🔮 MOTOR DE PREVISÃO E PRESCRIÇÃO (Dinamizado)
+# 🔮 MOTOR DE PREVISÃO, PRESCRIÇÃO E IMPACTO FINANCEIRO
 # ==========================================
-st.subheader("⚙️ Centro de Decisão Estratégica")
+st.subheader("⚙️ Centro de Decisão Estratégica e Impacto Financeiro")
 
 if st.button("Executar Simulação do Sistema", type="primary", use_container_width=True):
-    with st.spinner('O algoritmo está a calcular o impacto operacional...'):
+    with st.spinner('O algoritmo está calculando o impacto operacional e financeiro...'):
         resultado = model.predict(dados_entrada.values)[0]
     
     st.markdown("<br>", unsafe_allow_html=True)
     res_col1, res_col2 = st.columns(2)
 
+    # --- VARIÁVEIS FINANCEIRAS DO BUSINESS CASE ---
+    # Baseado na regra do Grupo Vitta: (NS Atual - Meta) * 235 * 192 mil clientes
+    ganho_anual_protegido = 378556.80 
+    # Estimativa de custo de um operador por mês (salário + encargos) para cálculo Lean
+    custo_estimado_posto_mes = 3500.00 
+
     if resultado == 1:
+        # --- CENÁRIO: RISCO DE QUEBRA DE SLA ---
         with res_col1:
-            st.error("### 🚨 STATUS: RISCO DE FALHA\nAlta probabilidade de quebra de fluxo com este cenário.")
+            st.error("### 🚨 STATUS: RISCO DE FALHA")
+            st.write("Alta probabilidade de quebra de fluxo com o cenário atual.")
+            
+            # Métrica de Dor Financeira
+            st.metric(
+                label="💸 Risco Financeiro Anualizado", 
+                value=f"- R$ {ganho_anual_protegido:,.2f}", 
+                delta="Perda potencial de bônus por quebra de NS", 
+                delta_color="inverse"
+            )
             
         with res_col2:
             st.warning("### 🛠️ DECISÃO PRESCRITIVA")
             solucao_encontrada = False
             
-            # Simulação automática para encontrar a configuração ideal
+            # Simulação para achar a solução
             for g in range(guiches + 1, 16):
                 cpg_sim = clientes / g
                 cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
                 
                 if model.predict(cen_sim.values)[0] == 0:
-                    st.success(f"💡 **Plano de Ação:** Abra mais **{g - guiches} guiché(s)** para estabilizar o processo.")
-                    st.progress(g/15, text=f"Capacidade Necessária: {g}/15 guichés")
+                    st.success(f"💡 **Ação:** Abra mais **{g - guiches} guichê(s)** imediatamente para proteger a receita da unidade.")
+                    st.progress(g/15, text=f"Capacidade Física Necessária: {g}/15 guichês")
                     solucao_encontrada = True
                     break 
             
             if not solucao_encontrada:
                 st.error("🚨 **COLAPSO DE CAPACIDADE**")
-                st.info("Aumentar guichés não é suficiente. Atue em: **Erros de Registo** ou **Tempo de Autorização**.")
+                st.info("Aumentar guichês não resolverá. Atue na causa raiz: reduza erros ou o tempo de autorização do sistema.")
                 
     else:
+        # --- CENÁRIO: OPERAÇÃO ESTÁVEL E OTIMIZAÇÃO ---
         with res_col1:
-            st.success("### ✅ STATUS: OPERAÇÃO ESTÁVEL\nO cenário atual suporta a procura sem estrangulamentos.")
+            st.success("### ✅ STATUS: OPERAÇÃO ESTÁVEL")
+            st.write("O cenário suporta a demanda e garante a meta de NS.")
+            
+            # Métrica de Ganho Garantido
+            st.metric(
+                label="💰 Receita de SLA Protegida", 
+                value=f"R$ {ganho_anual_protegido:,.2f}", 
+                delta="Ganho anual mantido", 
+                delta_color="normal"
+            )
             
         with res_col2:
             st.info("### 🔍 OPORTUNIDADE LEAN (OTIMIZAÇÃO)")
             guiches_ideais = guiches
+            
+            # Otimização reversa: fechando guichês
             for g in range(guiches - 1, 0, -1):
                 cpg_sim = clientes / g
                 cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
                 if model.predict(cen_sim.values)[0] == 0:
                     guiches_ideais = g
-                else: break
+                else: 
+                    break
             
             if guiches_ideais < guiches:
-                st.metric("Potencial de Redução", value=f"{guiches - guiches_ideais} Guiché(s)", delta="- Custos Operacionais")
-                st.write(f"Pode operar com apenas **{guiches_ideais} guichés** mantendo a segurança do SLA.")
+                postos_salvos = guiches - guiches_ideais
+                economia_mes = postos_salvos * custo_estimado_posto_mes
+                
+                # Métrica de Economia Lean
+                st.metric(
+                    label="Ociosidade Identificada", 
+                    value=f"- {postos_salvos} Guichê(s)", 
+                    delta=f"Economia estimada: R$ {economia_mes:,.2f} / mês", 
+                    delta_color="normal"
+                )
+                st.write(f"Você pode operar com segurança usando apenas **{guiches_ideais} guichês** e realocar a equipe.")
             else:
-                st.success("💡 **Eficiência Máxima:** Recursos perfeitamente dimensionados.")
+                st.success("💡 **Eficiência Máxima:** Sem ociosidade. A operação está 100% otimizada.")
+
+
 
 # ==========================================
 # 📊 ANÁLISE DE CAUSA RAIZ (Feature Importance)
