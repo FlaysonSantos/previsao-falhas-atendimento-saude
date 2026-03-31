@@ -65,7 +65,6 @@ dados_entrada = pd.DataFrame([[
 ])
 
 
-
 # ==========================================
 # ⚙️ BLOCO DE PREVISÃO, DECISÃO E ALERTAS
 # ==========================================
@@ -124,6 +123,18 @@ if st.button("Executar Simulação do Sistema", type="primary", use_container_wi
                 st.warning(f"💡 **Oportunidade Lean:** Você pode fechar **{guiches - guiches_ideais} guichê(s)** sem perder o nível de serviço.")
             else:
                 st.info("💡 **Eficiência Máxima:** Recursos bem dimensionados.")
+                
+
+# --- FEATURE IMPORTANCE DINÂMICO ---
+st.markdown("---")
+st.subheader("📊 Importância das Variáveis no Cenário Atual")
+try:
+    importancias = model.feature_importances_
+    df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto (%)']).sort_values(by='Impacto (%)', ascending=True)
+    st.bar_chart(df_imp)
+except:
+    st.info("Gráfico de impacto indisponível para este modelo.")
+
 
 # --- FEATURE IMPORTANCE DINÂMICO ---
 st.markdown("---")
