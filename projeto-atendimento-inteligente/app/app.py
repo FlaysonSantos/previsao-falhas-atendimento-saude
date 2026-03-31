@@ -125,6 +125,8 @@ if st.button("Executar Simulação do Sistema", type="primary", use_container_wi
             else:
                 st.success("💡 **Eficiência Máxima:** Recursos perfeitamente dimensionados.")
 
+
+
 # ==========================================
 # 🧠 EXPLICABILIDADE DO MODELO (SHAP) E CAUSA RAIZ
 # ==========================================
