@@ -67,96 +67,73 @@ dados_entrada = pd.DataFrame([[
 
 
 # ==========================================
-# 🔮 MOTOR DE PREVISÃO E PRESCRIÇÃO
+# ⚙️ BLOCO DE PREVISÃO, DECISÃO E ALERTAS
 # ==========================================
 st.subheader("⚙️ Análise Preditiva e Plano de Ação")
 
 if st.button("Executar Simulação do Sistema", type="primary", use_container_width=True):
-    with st.spinner('A processar o algoritmo e analisar variáveis...'):
+    with st.spinner('Analisando variáveis e simulando decisões...'):
+        # 1. Executa a previsão principal (AQUI CRIA A VARIÁVEL RESULTADO)
         resultado = model.predict(dados_entrada.values)[0]
     
     st.markdown("<br>", unsafe_allow_html=True)
-
     col_alert, col_action = st.columns(2)
 
     if resultado == 1:
-        # CENÁRIO 1: VAI DAR FALHA
+        # --- CENÁRIO DE FALHA (ALERTA AUTOMÁTICO) ---
         with col_alert:
-            st.error("### ⚠️ ALERTA DE FALHA\nAlta probabilidade de quebra de fluxo com este cenário. Necessária intervenção.")
+            st.error("### ⚠️ ALERTA DE FALHA\nProbabilidade de quebra de fluxo detectada.")
             
         with col_action:
-            st.warning("### 🔍 AVALIANDO SOLUÇÕES...")
+            st.warning("### 🔍 SIMULAÇÃO DE DECISÃO")
             solucao_encontrada = False
             
-            # Simula ABRIR guichés até ao limite máximo de 15
-            for guiches_simulados in range(guiches + 1, 16):
-                cpg_simulado = clientes / guiches_simulados
+            # Tenta encontrar a configuração ideal automaticamente
+            for g in range(guiches + 1, 16):
+                cpg_simulado = clientes / g
                 cenario_simulado = pd.DataFrame([[
-                    clientes, guiches_simulados, plano_saude, documentos, 
+                    clientes, g, plano_saude, documentos, 
                     experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_simulado
                 ]], columns=dados_entrada.columns)
                 
                 if model.predict(cenario_simulado.values)[0] == 0:
-                    guiches_a_abrir = guiches_simulados - guiches
-                    st.success(f"💡 **Plano de Ação:** Abra mais **{guiches_a_abrir} guiché(s)** (passando a operar com {guiches_simulados} no total) para estabilizar o processo.")
+                    st.success(f"💡 **Decisão Recomendada:** Abra mais **{g - guiches} guichê(s)** para estabilizar o processo.")
                     solucao_encontrada = True
                     break 
                     
-            # SE CHEGOU A 15 GUICHÉS E CONTINUA A FALHAR (O SEU NOVO CENÁRIO)
             if not solucao_encontrada:
-                st.error("🚨 **COLAPSO DE CAPACIDADE EMINENTE**")
-                st.info(f"💡 **Diagnóstico:** O volume atual ({clientes} clientes) ultrapassa a capacidade máxima física da unidade (15 guichés). Aumentar a equipa já não é possível.")
-                st.warning(
-                    "🛠️ **Ativar Plano de Contingência:**\n"
-                    "- **Desvio de Fluxo:** Direcionar clientes para o autoatendimento, aplicação ou triagem rápida.\n"
-                    "- **Força-Tarefa:** Deslocar supervisores ou backoffice para o atendimento de linha da frente.\n"
-                    "- **Modo Emergência:** Focar em zerar *Erros de Registo* e acelerar o *Tempo de Autorização* ao máximo."
-                )
+                st.info("💡 **Ação Direta:** Aumentar guichês não basta. Reduza **erros de registro** ou o **tempo de autorização**.")
                 
     else:
-        # CENÁRIO 2: ATENDIMENTO OK (Verifica se há desperdício)
+        # --- CENÁRIO OK (BUSCA DE OCIOSIDADE LEAN) ---
         with col_alert:
-            st.success("### ✅ OPERAÇÃO ESTÁVEL\nO cenário atual suporta a procura sem estrangulamentos.")
+            st.success("### ✅ OPERAÇÃO ESTÁVEL\nO cenário atual suporta a demanda.")
             
         with col_action:
-            st.info("### 🔍 PROCURANDO OPORTUNIDADES LEAN...")
+            # Alerta automático de ociosidade
             guiches_ideais = guiches
-            
-            # Simula FECHAR guichés do atual até 1
-            for guiches_simulados in range(guiches - 1, 0, -1):
-                cpg_simulado = clientes / guiches_simulados
-                cenario_simulado = pd.DataFrame([[
-                    clientes, guiches_simulados, plano_saude, documentos, 
-                    experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_simulado
-                ]], columns=dados_entrada.columns)
-                
-                if model.predict(cenario_simulado.values)[0] == 1:
-                    break
+            for g in range(guiches - 1, 0, -1):
+                cpg_sim = clientes / g
+                cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
+                if model.predict(cen_sim.values)[0] == 0:
+                    guiches_ideais = g
                 else:
-                    guiches_ideais = guiches_simulados
-                    
+                    break
+            
             if guiches_ideais < guiches:
-                guiches_a_fechar = guiches - guiches_ideais
-                st.warning(f"💡 **Alerta de Ociosidade:** Está a utilizar recursos em excesso. Pode **fechar {guiches_a_fechar} guiché(s)** e operar apenas com **{guiches_ideais}**. O atendimento continuará estável e reduzirá os custos operacionais.")
+                st.warning(f"💡 **Oportunidade Lean:** Você pode fechar **{guiches - guiches_ideais} guichê(s)** sem perder o nível de serviço.")
             else:
-                st.success("💡 **Eficiência Máxima:** Os seus recursos estão perfeitamente dimensionados para a procura atual. Não há ociosidade.")
+                st.info("💡 **Eficiência Máxima:** Recursos bem dimensionados.")
 
-# Simulação de Decisão Automática
-if resultado == 1:
-    st.error("🚨 Alerta de Quebra de NS (Abaixo de 75%)")
-    
-    # Busca automática da melhor configuração (Decision Simulation)
-    for g in range(guiches + 1, 16):
-        # Simula o impacto Lean: abrindo guichês e reduzindo erros
-        simulacao = [[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, 0, clientes/g]]
-        if model.predict(simulacao)[0] == 0:
-            st.success(f"✅ Decisão Prescritiva: Abra mais {g - guiches} guichê(s) para estabilizar o NS.")
-            break
-
-# Exibição de Alerta Baseado em Carta de Controle (Fase Control)
-if clientes_por_guiche > 13.2: # Valor crítico identificado no seu case
-    st.warning("⚠️ Atenção: Carga por guichê acima do Limite de Controle (LSC).")
-
+# --- FEATURE IMPORTANCE DINÂMICO ---
+st.markdown("---")
+st.subheader("📊 Importância das Variáveis no Cenário Atual")
+try:
+    importancias = model.feature_importances_
+    df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto (%)']).sort_values(by='Impacto (%)', ascending=True)
+    st.bar_chart(df_imp)
+except:
+    st.info("Gráfico de impacto indisponível para este modelo.")
 
 # ==========================================
 # 📊 GRÁFICO DE IMPACTO DAS VARIÁVEIS
