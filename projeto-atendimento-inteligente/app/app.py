@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import shap
 import matplotlib.pyplot as plt
+import numpy as np
 
 # 1. Configuração da Página e Carregamento do Modelo
 st.set_page_config(page_title="Dashboard de Operações", page_icon="📊", layout="wide")
@@ -142,17 +143,23 @@ try:
         # 2. Calcula os valores SHAP apenas para os dados atuais simulados
         shap_values = explainer.shap_values(dados_entrada)
         
-        # 3. Tratamento para Random Forest (que geralmente retorna uma lista de arrays para classificação)
-        # Pegamos a classe 1 (Falha)
+        # 3. Tratamento robusto para extrair apenas um array 1D (Isso resolve o erro!)
         if isinstance(shap_values, list):
-            shap_instance = shap_values[1][0] 
+            shap_instance = shap_values[1] # Pega a classe 1 (Falha) para modelos binários listados
         else:
-            shap_instance = shap_values[0]
+            shap_instance = shap_values
+            
+        # Força o array a ficar plano (1D), transformando [[x, y]] em [x, y]
+        shap_instance_1d = np.array(shap_instance).flatten()
+        
+        # Fallback de segurança caso a API do SHAP retorne classes combinadas
+        if len(shap_instance_1d) > len(dados_entrada.columns):
+            shap_instance_1d = shap_instance_1d[-len(dados_entrada.columns):]
             
         # 4. Criamos uma tabela formatada para visualizar no Streamlit
         df_shap = pd.DataFrame({
             'Variável': dados_entrada.columns,
-            'Força (Impacto SHAP)': shap_instance
+            'Força (Impacto SHAP)': shap_instance_1d
         })
         
         # Ordenamos do maior impacto para o menor
@@ -169,7 +176,7 @@ try:
         ax.set_title('Impacto de cada variável na decisão atual')
         plt.gca().invert_yaxis() # Inverte para o maior impacto ficar no topo
         
-        # Removemos as bordas para um visual mais limpo (estilo Streamlit)
+        # Removemos as bordas para um visual mais limpo
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
