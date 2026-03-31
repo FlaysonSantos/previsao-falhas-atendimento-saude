@@ -2,6 +2,8 @@ import streamlit as st
 import joblib
 import pandas as pd
 import os
+import shap
+import matplotlib.pyplot as plt
 
 # 1. Configuração da Página e Carregamento do Modelo
 st.set_page_config(page_title="Dashboard de Operações", page_icon="📊", layout="wide")
@@ -124,13 +126,60 @@ if st.button("Executar Simulação do Sistema", type="primary", use_container_wi
                 st.success("💡 **Eficiência Máxima:** Recursos perfeitamente dimensionados.")
 
 # ==========================================
-# 📊 ANÁLISE DE CAUSA RAIZ (Feature Importance)
+# 🧠 EXPLICABILIDADE DO MODELO (SHAP) E CAUSA RAIZ
 # ==========================================
 st.markdown("---")
-st.subheader("🔍 O que mais impacta as falhas no atendimento?")
+st.subheader("🧠 Por que o modelo tomou esta decisão?")
+st.write("A análise **SHAP** abaixo não olha para a regra geral, mas sim exclusivamente para **este cenário exato** que você acabou de simular. Descubra quais variáveis empurram o risco para a **FALHA (Vermelho)** e quais seguram a operação no **SUCESSO (Azul)**.")
+
 try:
-    importancias = model.feature_importances_
-    df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto %']).sort_values(by='Impacto %', ascending=True)
-    st.bar_chart(df_imp, color="#ff4b4b", height=350)
-except AttributeError:
-    st.info("⚠️ O seu modelo não suporta visualização de importância de variáveis.")
+    with st.spinner('A calcular os valores de Shapley (SHAP)...'):
+        # 1. Cria o 'Explicador' baseado no seu Random Forest
+        explainer = shap.TreeExplainer(model)
+        
+        # 2. Calcula os valores SHAP apenas para os dados atuais simulados
+        shap_values = explainer.shap_values(dados_entrada)
+        
+        # 3. Tratamento para Random Forest (que geralmente retorna uma lista de arrays para classificação)
+        # Pegamos a classe 1 (Falha)
+        if isinstance(shap_values, list):
+            shap_instance = shap_values[1][0] 
+        else:
+            shap_instance = shap_values[0]
+            
+        # 4. Criamos uma tabela formatada para visualizar no Streamlit
+        df_shap = pd.DataFrame({
+            'Variável': dados_entrada.columns,
+            'Força (Impacto SHAP)': shap_instance
+        })
+        
+        # Ordenamos do maior impacto para o menor
+        df_shap['Impacto Absoluto'] = df_shap['Força (Impacto SHAP)'].abs()
+        df_shap = df_shap.sort_values(by='Impacto Absoluto', ascending=False).drop(columns=['Impacto Absoluto'])
+        
+        # 5. Desenhamos um gráfico de barras horizontal (Vermelho para risco, Azul para proteção)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        
+        cores = ['#ff4b4b' if x > 0 else '#1f77b4' for x in df_shap['Força (Impacto SHAP)']]
+        ax.barh(df_shap['Variável'], df_shap['Força (Impacto SHAP)'], color=cores)
+        
+        ax.set_xlabel('← Ajuda a Estabilizar (Azul) | Aumenta Risco de Falha (Vermelho) →')
+        ax.set_title('Impacto de cada variável na decisão atual')
+        plt.gca().invert_yaxis() # Inverte para o maior impacto ficar no topo
+        
+        # Removemos as bordas para um visual mais limpo (estilo Streamlit)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
+        # Renderizamos no Streamlit
+        st.pyplot(fig)
+        
+        # 6. Adicionamos um Insight Dinâmico em texto
+        ofensor_principal = df_shap.iloc[0]
+        if ofensor_principal['Força (Impacto SHAP)'] > 0:
+            st.error(f"🎯 **Causa Raiz Deste Cenário:** A variável **'{ofensor_principal['Variável']}'** é a principal responsável por empurrar esta simulação para o colapso.")
+        else:
+            st.success(f"🛡️ **Principal Fortaleza:** A variável **'{ofensor_principal['Variável']}'** é o que mais está ajudando a manter a operação estável neste momento.")
+
+except Exception as e:
+    st.info(f"⚠️ Não foi possível gerar a análise SHAP para este modelo. Detalhes: {e}")
