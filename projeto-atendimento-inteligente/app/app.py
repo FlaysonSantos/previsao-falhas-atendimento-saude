@@ -66,74 +66,72 @@ dados_entrada = pd.DataFrame([[
 
 
 # ==========================================
-# ⚙️ BLOCO DE PREVISÃO, DECISÃO E ALERTAS
+# ⚙️ PAINEL DE DECISÃO DINÂMICO
 # ==========================================
-st.subheader("⚙️ Análise Preditiva e Plano de Ação")
+st.subheader("⚙️ Centro de Decisão Estratégica")
 
 if st.button("Executar Simulação do Sistema", type="primary", use_container_width=True):
-    with st.spinner('Analisando variáveis e simulando decisões...'):
-        # 1. Executa a previsão principal (AQUI CRIA A VARIÁVEL RESULTADO)
+    with st.spinner('O algoritmo está a calcular o impacto operacional...'):
         resultado = model.predict(dados_entrada.values)[0]
     
-    st.markdown("<br>", unsafe_allow_html=True)
-    col_alert, col_action = st.columns(2)
-
+    st.markdown("---")
+    
+    # 1. Indicadores de Impacto Imediato
+    res1, res2 = st.columns(2)
+    
     if resultado == 1:
-        # --- CENÁRIO DE FALHA (ALERTA AUTOMÁTICO) ---
-        with col_alert:
-            st.error("### ⚠️ ALERTA DE FALHA\nProbabilidade de quebra de fluxo detectada.")
-            
-        with col_action:
-            st.warning("### 🔍 SIMULAÇÃO DE DECISÃO")
-            solucao_encontrada = False
-            
-            # Tenta encontrar a configuração ideal automaticamente
+        with res1:
+            st.error("### 🚨 STATUS: RISCO DE FALHA")
+            st.write("O cenário atual não sustenta o Nível de Serviço (NS) de 75%.") [cite: 164, 232]
+        
+        with res2:
+            st.warning("### 🛠️ PLANO DE CONTINGÊNCIA")
+            # Motor Prescritivo para recomendação automática
+            solucao = False
             for g in range(guiches + 1, 16):
-                cpg_simulado = clientes / g
-                cenario_simulado = pd.DataFrame([[
-                    clientes, g, plano_saude, documentos, 
-                    experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_simulado
-                ]], columns=dados_entrada.columns)
-                
-                if model.predict(cenario_simulado.values)[0] == 0:
-                    st.success(f"💡 **Decisão Recomendada:** Abra mais **{g - guiches} guichê(s)** para estabilizar o processo.")
-                    solucao_encontrada = True
-                    break 
-                    
-            if not solucao_encontrada:
-                st.info("💡 **Ação Direta:** Aumentar guichês não basta. Reduza **erros de registro** ou o **tempo de autorização**.")
-                
+                cpg_sim = clientes / g
+                cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
+                if model.predict(cen_sim.values)[0] == 0:
+                    st.success(f"**Ação:** Aumentar para **{g} guichés** resolve o problema.")
+                    st.progress((g/15), text=f"Capacidade Utilizada: {g}/15")
+                    solucao = True
+                    break
+            if not solucao:
+                st.info("⚠️ Capacidade máxima atingida. Reduza Erros ou Tempos de Autorização.") [cite: 1039, 1040]
+
     else:
-        # --- CENÁRIO OK (BUSCA DE OCIOSIDADE LEAN) ---
-        with col_alert:
-            st.success("### ✅ OPERAÇÃO ESTÁVEL\nO cenário atual suporta a demanda.")
-            
-        with col_action:
-            # Alerta automático de ociosidade
+        with res1:
+            st.success("### ✅ STATUS: OPERAÇÃO ESTÁVEL")
+            st.write("A operação está a entregar o NS acima da meta.") [cite: 1399]
+        
+        with res2:
+            # Análise de Ociosidade (Lean Thinking)
+            st.info("### 🍃 OPORTUNIDADE LEAN")
             guiches_ideais = guiches
             for g in range(guiches - 1, 0, -1):
                 cpg_sim = clientes / g
                 cen_sim = pd.DataFrame([[clientes, g, plano_saude, documentos, experiencia_operador, tempo_autorizacao, erros_cadastro, cpg_sim]], columns=dados_entrada.columns)
                 if model.predict(cen_sim.values)[0] == 0:
                     guiches_ideais = g
-                else:
-                    break
+                else: break
             
             if guiches_ideais < guiches:
-                st.warning(f"💡 **Oportunidade Lean:** Você pode fechar **{guiches - guiches_ideais} guichê(s)** sem perder o nível de serviço.")
+                st.metric("Guichés Excedentes", value=guiches - guiches_ideais, delta="- Custo Operacional", delta_color="normal")
+                st.write(f"Podes operar com apenas **{guiches_ideais} guichés** com segurança.")
             else:
-                st.info("💡 **Eficiência Máxima:** Recursos bem dimensionados.")
-                
+                st.write("Recursos perfeitamente equilibrados (Just-in-Time).")
 
-# --- FEATURE IMPORTANCE DINÂMICO ---
-st.markdown("---")
-st.subheader("📊 Importância das Variáveis no Cenário Atual")
-try:
-    importancias = model.feature_importances_
-    df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto (%)']).sort_values(by='Impacto (%)', ascending=True)
-    st.bar_chart(df_imp)
-except:
-    st.info("Gráfico de impacto indisponível para este modelo.")
+    # 2. Gráfico Dinâmico de Causa Raiz (Feature Importance)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("🔍 Análise de Causa Raiz em Tempo Real")
+    st.write("Identificação automática do fator que mais está a pressionar o atendimento neste momento:")
+    
+    try:
+        importancias = model.feature_importances_
+        df_imp = pd.DataFrame(importancias * 100, index=dados_entrada.columns, columns=['Impacto %']).sort_values(by='Impacto %', ascending=True)
+        st.bar_chart(df_imp, color="#ff4b4b")
+    except:
+        st.info("Gráfico de Pareto dinâmico indisponível.") [cite: 689, 713]
 
 
 # --- FEATURE IMPORTANCE DINÂMICO ---
